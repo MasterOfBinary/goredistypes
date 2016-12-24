@@ -1,14 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"time"
 
-	"encoding/json"
-	"io/ioutil"
-
-	"github.com/MasterOfBinary/redistypes"
+	"github.com/MasterOfBinary/redistypes/hyperloglog"
+	"github.com/MasterOfBinary/redistypes/list"
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -42,28 +42,47 @@ func main() {
 		panic(err)
 	}
 
-	conn := redis.NewConn(netConn, 10*time.Second, time.Second)
+	conn := redis.NewConn(netConn, time.Second, time.Second)
 	defer conn.Close()
 
-	list := redistypes.NewRedisList(conn, "newlist")
+	l := list.NewRedisList(conn, "newlist")
 
-	size, err := list.RPush("hello", "world")
+	size, err := l.RPush("hello", "world")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(size)
-	size, err = list.LPush("goodbye", "world")
+	size, err = l.LPush("world", "hello")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(size)
 
-	r, err := list.LRange(0, -1)
+	r, err := redis.Strings(l.LRange(0, -1))
 	if err != nil {
 		panic(err)
 	}
 
-	for _, item := range r {
-		fmt.Println(string(item.([]byte)))
+	fmt.Println(r)
+
+	hll := hyperloglog.NewRedisHyperLogLog(conn, "hll")
+
+	modified, _ := hll.Add("hello", "goodbye", "abc", "def")
+	size, _ = hll.Count()
+	fmt.Println(size)
+
+	hll2 := hyperloglog.NewRedisHyperLogLog(conn, "hll2")
+
+	modified, _ = hll2.Add("yay", "abc", "boo", "hi", "hey")
+	fmt.Println(modified)
+	size, _ = hll.Count()
+	fmt.Println(size)
+
+	hll3, err := hll.Merge("hll3", hll2)
+	if err != nil {
+		panic(err)
 	}
+
+	size, _ = hll3.Count()
+	fmt.Println(size)
 }
