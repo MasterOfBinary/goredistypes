@@ -5,6 +5,8 @@
 
 A simple program demonstrating the functionality of the Go Redis data types library https://github.com/MasterOfBinary/redistypes.
 
+*NOTE: this project has been archived because I don't have time to work on it.*
+
 To download, run
 
     go get github.com/MasterOfBinary/goredistypes
